@@ -1,0 +1,2270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Système de Gestion des Points Topographiques - METATOPO</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .metatopo-banner {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            font-size: 0.85rem;
+            position: relative;
+            z-index: 10001;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .metatopo-banner .logo {
+            font-weight: bold;
+            color: #3498db;
+            margin-right: 1rem;
+        }
+
+        .metatopo-banner .contact {
+            margin-left: 1rem;
+        }
+
+        .metatopo-banner a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .metatopo-banner a:hover {
+            color: #2980b9;
+        }
+
+        .login-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 1.1rem;
+            margin-top: 0.7rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            display: none;
+        }
+
+        .app-container {
+            display: none;
+            height: 100vh;
+            position: relative;
+        }
+
+        .app-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            position: relative;
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-name {
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        #map {
+            height: calc(100vh - 120px);
+            width: 100%;
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 140px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            min-width: 280px;
+            max-width: 320px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .control-section {
+            margin-bottom: 1rem;
+        }
+
+        .control-section h3 {
+            color: #333;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.3rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 25px;
+            margin-right: 0.8rem;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 25px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 19px;
+            width: 19px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(25px);
+        }
+
+        .input-group {
+            margin-bottom: 0.8rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.3rem;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 0.6rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 0.4rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.3);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 1.5rem;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #333;
+        }
+
+        .file-drop-zone {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .file-drop-zone.dragover {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+            transform: scale(1.02);
+        }
+
+        .file-drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .file-info {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-radius: 6px;
+            padding: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .column-mapping {
+            display: none;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .column-mapping h4 {
+            color: #333;
+            margin-bottom: 0.8rem;
+            font-size: 1rem;
+        }
+
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.6rem;
+            gap: 0.8rem;
+        }
+
+        .mapping-label {
+            min-width: 80px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.85rem;
+        }
+
+        .mapping-select {
+            flex: 1;
+            padding: 0.4rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .leaflet-popup-content {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .popup-header {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .popup-info {
+            margin-bottom: 6px;
+        }
+
+        .popup-label {
+            font-weight: 500;
+            color: #666;
+        }
+
+        .popup-value {
+            color: #333;
+        }
+
+        .popup-actions {
+            margin-top: 12px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .popup-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .popup-btn.delete {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .popup-btn.google-maps {
+            background: white !important;
+            color: #667eea !important;
+            border: 2px solid #667eea !important;
+        }
+
+        .popup-btn.google-maps:hover {
+            background: #667eea !important;
+            color: white !important;
+            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                left: 10px;
+                right: 10px;
+                min-width: auto;
+                width: calc(100% - 20px);
+                max-height: 250px;
+                padding: 0.8rem;
+            }
+
+            .login-card {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            .app-header {
+                padding: 0.8rem;
+                flex-direction: column;
+                gap: 0.8rem;
+            }
+
+            .app-title {
+                font-size: 1.2rem;
+            }
+
+            .metatopo-banner {
+                font-size: 0.7rem;
+                padding: 0.3rem;
+            }
+
+            .metatopo-banner .contact {
+                margin-left: 0;
+                margin-top: 0.2rem;
+                display: block;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                padding: 1rem;
+                max-width: 95%;
+            }
+
+            .control-section h3 {
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                font-size: 0.8rem;
+                padding: 0.5rem 0.8rem;
+            }
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10001;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .location-btn {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            border: none;
+            padding: 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 0.4rem;
+        }
+
+        .location-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(23, 162, 184, 0.3);
+        }
+
+        .location-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="metatopo-banner">
+        <span class="logo">🗺️ METATOPO</span>
+        Application développée par METATOPO - 
+        <span class="contact">
+            Pour des applications sur mesure : 
+            <a href="mailto:Bouhabba.igt@gmail.com">Bouhabba.igt@gmail.com</a> | 
+            <a href="tel:+212661245376">+212 661 245 376</a>
+        </span>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="login-container" id="loginSection">
+        <div class="login-card">
+            <div class="login-header">
+                <h1><i class="fas fa-map-marked-alt"></i> METATOPO</h1>
+                <p>Système de Gestion des Points Topographiques</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Nom d'utilisateur</label>
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" required placeholder="Entrez votre nom d'utilisateur">
+                </div>
+                <div class="form-group">
+                    <label for="password">Mot de passe</label>
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" required placeholder="Entrez votre mot de passe">
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+                <div class="error-message" id="loginError">
+                    <i class="fas fa-exclamation-triangle"></i> Identifiants incorrects. Veuillez réessayer.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="appContainer">
+        <div class="app-header">
+            <div class="app-title">
+                <i class="fas fa-map-marked-alt"></i> METATOPO - Gestion des Points Topographiques
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="currentUser"></span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <div class="control-section">
+                <h3><i class="fas fa-location-arrow"></i> Ma Position</h3>
+                <button class="location-btn" id="locationBtn" onclick="getCurrentLocation()">
+                    <i class="fas fa-crosshairs"></i> Me Localiser
+                </button>
+            </div>
+
+            <div class="control-section">
+                <h3><i class="fas fa-crosshairs"></i> Outils de Coordonnées</h3>
+                <div style="display: flex; align-items: center; margin-bottom: 0.8rem;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="coordinateMode">
+                        <span class="slider"></span>
+                    </label>
+                    <span style="font-size: 0.85rem;">Cliquer pour obtenir les coordonnées</span>
+                </div>
+            </div>
+
+            <div class="control-section" id="coordinateSearch">
+                <h3><i class="fas fa-search-location"></i> Recherche par Coordonnées</h3>
+                <div class="input-group">
+                    <label>Zone de Projection</label>
+                    <select id="searchZone">
+                        <option value="">Sélectionner une zone</option>
+                        <option value="Zone 1">Zone 1 - Nord Maroc</option>
+                        <option value="Zone 2">Zone 2 - Centre Maroc</option>
+                        <option value="Zone 3">Zone 3 - Sahara Nord</option>
+                        <option value="Zone 4">Zone 4 - Sahara Sud</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Coordonnée X</label>
+                    <input type="number" id="searchX" placeholder="Entrez la coordonnée X" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Coordonnée Y</label>
+                    <input type="number" id="searchY" placeholder="Entrez la coordonnée Y" step="0.01">
+                </div>
+                <button class="btn" onclick="searchByCoordinates()">
+                    <i class="fas fa-search"></i> Rechercher
+                </button>
+            </div>
+
+            <div class="control-section">
+                <h3><i class="fas fa-plus-circle"></i> Ajouter des Points</h3>
+                <button class="btn" onclick="showAddPointModal()">
+                    <i class="fas fa-map-pin"></i> Ajouter un Point
+                </button>
+            </div>
+
+            <div class="control-section">
+                <h3><i class="fas fa-download"></i> Exporter les Données</h3>
+                <button class="btn btn-secondary" onclick="exportData()">
+                    <i class="fas fa-file-csv"></i> Exporter en CSV
+                </button>
+                <button class="btn btn-secondary" onclick="exportUserDataJSON()">
+                    <i class="fas fa-file-code"></i> Exporter en JSON
+                </button>
+                <button class="btn btn-secondary" onclick="downloadSampleCSV()">
+                    <i class="fas fa-download"></i> Télécharger Modèle CSV
+                </button>
+            </div>
+
+            <div class="control-section">
+                <h3><i class="fas fa-upload"></i> Importer des Données</h3>
+                <button class="btn btn-success" onclick="showImportModal()">
+                    <i class="fas fa-file-csv"></i> Importer CSV
+                </button>
+                <input type="file" id="jsonFileInput" accept=".json" style="display: none;" onchange="handleJSONFile(this.files[0])">
+                <button class="btn btn-success" onclick="document.getElementById('jsonFileInput').click()">
+                    <i class="fas fa-file-code"></i> Importer JSON
+                </button>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </div>
+
+    <div id="addPointModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-map-pin"></i> Ajouter un Point Topographique</h2>
+                <button class="close" onclick="closeAddPointModal()">&times;</button>
+            </div>
+            <form id="addPointForm">
+                <div class="input-group">
+                    <label>Nom du Point *</label>
+                    <input type="text" id="pointName" required placeholder="Entrez le nom du point">
+                </div>
+                <div class="input-group">
+                    <label>Zone de Projection *</label>
+                    <select id="pointZone" required>
+                        <option value="">Sélectionner une zone</option>
+                        <option value="Zone 1">Zone 1 - Nord Maroc</option>
+                        <option value="Zone 2">Zone 2 - Centre Maroc</option>
+                        <option value="Zone 3">Zone 3 - Sahara Nord</option>
+                        <option value="Zone 4">Zone 4 - Sahara Sud</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Coordonnée X *</label>
+                    <input type="number" id="pointX" required placeholder="Entrez la coordonnée X" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Coordonnée Y *</label>
+                    <input type="number" id="pointY" required placeholder="Entrez la coordonnée Y" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Coordonnée Z (Altitude)</label>
+                    <input type="number" id="pointZ" placeholder="Entrez l'altitude (optionnel)" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label>Description</label>
+                    <input type="text" id="pointDescription" placeholder="Entrez la description">
+                </div>
+                <div class="input-group">
+                    <label>Référence</label>
+                    <input type="text" id="pointReference" placeholder="Entrez la référence">
+                </div>
+                <div class="input-group">
+                    <label>Projet/Lotissement</label>
+                    <input type="text" id="pointProject" placeholder="Entrez le nom du projet">
+                </div>
+                <button type="submit" class="btn">
+                    <i class="fas fa-save"></i> Enregistrer le Point
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="importModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-csv"></i> Importer des Points depuis un Fichier CSV</h2>
+                <button class="close" onclick="closeImportModal()">&times;</button>
+            </div>
+            
+            <div class="file-drop-zone" id="fileDropZone">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #667eea; margin-bottom: 0.8rem;"></i>
+                <p><strong>Glissez-déposez votre fichier CSV ici</strong></p>
+                <p>ou</p>
+                <button type="button" class="btn" onclick="document.getElementById('csvFileInput').click()">
+                    <i class="fas fa-folder-open"></i> Sélectionner un Fichier
+                </button>
+                <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            </div>
+
+            <div id="fileInfo" class="file-info" style="display: none;">
+                <h4><i class="fas fa-file-check"></i> Fichier sélectionné</h4>
+                <p id="fileName"></p>
+                <p id="fileSize"></p>
+            </div>
+
+            <div class="input-group">
+                <label style="display: flex; align-items: center;">
+                    <input type="checkbox" id="hasHeaders" checked style="margin-right: 0.5rem; width: auto;">
+                    Le fichier CSV contient des en-têtes
+                </label>
+            </div>
+
+            <div id="columnMapping" class="column-mapping">
+                <h4><i class="fas fa-exchange-alt"></i> Correspondance des Colonnes</h4>
+                <p style="font-size: 0.8rem; color: #666; margin-bottom: 0.8rem;">
+                    <strong>Obligatoire:</strong> Nom, X, Y | <strong>Optionnel:</strong> Zone (détection automatique), Z, Description, Référence, Projet
+                </p>
+                <div class="mapping-row">
+                    <span class="mapping-label"><strong>Nom *:</strong></span>
+                    <select id="nameColumn" class="mapping-select" required>
+                        <option value="">Sélectionner la colonne</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label">Zone:</span>
+                    <select id="zoneColumn" class="mapping-select">
+                        <option value="">Sélectionner la colonne (auto-détection si vide)</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label"><strong>X *:</strong></span>
+                    <select id="xColumn" class="mapping-select" required>
+                        <option value="">Sélectionner la colonne</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label"><strong>Y *:</strong></span>
+                    <select id="yColumn" class="mapping-select" required>
+                        <option value="">Sélectionner la colonne</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label">Z:</span>
+                    <select id="zColumn" class="mapping-select">
+                        <option value="">Sélectionner la colonne (optionnel)</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label">Description:</span>
+                    <select id="descColumn" class="mapping-select">
+                        <option value="">Sélectionner la colonne (optionnel)</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label">Référence:</span>
+                    <select id="refColumn" class="mapping-select">
+                        <option value="">Sélectionner la colonne (optionnel)</option>
+                    </select>
+                </div>
+                <div class="mapping-row">
+                    <span class="mapping-label">Projet:</span>
+                    <select id="projectColumn" class="mapping-select">
+                        <option value="">Sélectionner la colonne (optionnel)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="importActions" style="display: none;">
+                <button class="btn" onclick="importCSVData()">
+                    <i class="fas fa-upload"></i> Importer les Points
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.min.js"></script>
+    
+    <script>
+        class DataService {
+            constructor() {
+                this.owner = window.REPO_OWNER || 'khalidbhb';
+                this.repo = window.REPO_NAME || 'metatopo-data';
+                this.token = window.API_TOKEN;
+                this.baseUrl = 'https://api.github.com';
+                
+                if (!this.token) {
+                    throw new Error('Configuration requise');
+                }
+            }
+
+            getHeaders() {
+                return {
+                    'Authorization': `token ${this.token}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                };
+            }
+
+            async loadUserData(username) {
+                try {
+                    const url = `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/data/users/${username}.json`;
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: this.getHeaders()
+                    });
+
+                    if (response.status === 404) {
+                        return this.createNewUserProfile(username);
+                    }
+
+                    if (!response.ok) {
+                        throw new Error(`Erreur API: ${response.status}`);
+                    }
+
+                    const fileData = await response.json();
+                    const content = JSON.parse(atob(fileData.content));
+                    
+                    return content;
+
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            async saveUserData(username, userData) {
+                try {
+                    const currentData = await this.getCurrentFileSHA(username);
+                    const url = `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/data/users/${username}.json`;
+                    
+                    userData.statistics = this.calculateStatistics(userData.points);
+                    userData.user_info.last_login = new Date().toISOString();
+
+                    const content = btoa(JSON.stringify(userData, null, 2));
+                    
+                    const requestBody = {
+                        message: `📍 ${username}: ${userData.points.length} points | ${new Date().toLocaleString('fr-FR')}`,
+                        content: content,
+                        sha: currentData.sha
+                    };
+
+                    const response = await fetch(url, {
+                        method: 'PUT',
+                        headers: this.getHeaders(),
+                        body: JSON.stringify(requestBody)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Erreur sauvegarde: ${response.status}`);
+                    }
+
+                    await this.updateUsersFile(username, userData.user_info);
+                    
+                    return true;
+
+                } catch (error) {
+                    throw error;
+                }
+            }
+
+            async updateUsersFile(username, userInfo) {
+                try {
+                    const currentData = await this.getCurrentUsersFileSHA();
+                    const url = `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/users.json`;
+                    
+                    let usersData = {
+                        meta: {
+                            created_at: new Date().toISOString(),
+                            last_updated: new Date().toISOString(),
+                            version: "1.0",
+                            total_users: 0,
+                            description: "METATOPO Users Database - Auto-updated by application"
+                        },
+                        users: {}
+                    };
+
+                    if (currentData.content) {
+                        usersData = currentData.content;
+                        usersData.meta.last_updated = new Date().toISOString();
+                    }
+
+                    // Update user info
+                    usersData.users[username] = {
+                        name: userInfo.name,
+                        email: userInfo.email,
+                        role: userInfo.role,
+                        last_login: userInfo.last_login,
+                        created_at: userInfo.created_at,
+                        status: "active",
+                        permissions: userInfo.role === 'admin' ? ["read", "write", "delete", "admin"] : ["read", "write"],
+                        statistics: {
+                            total_logins: (usersData.users[username]?.statistics?.total_logins || 0) + 1,
+                            total_points_added: usersData.users[username]?.statistics?.total_points_added || 0,
+                            last_activity: new Date().toISOString()
+                        }
+                    };
+
+                    // Update meta info
+                    usersData.meta.total_users = Object.keys(usersData.users).length;
+
+                    const content = btoa(JSON.stringify(usersData, null, 2));
+                    
+                    const requestBody = {
+                        message: `🔄 Update users.json - ${username} login`,
+                        content: content,
+                        sha: currentData.sha
+                    };
+
+                    await fetch(url, {
+                        method: 'PUT',
+                        headers: this.getHeaders(),
+                        body: JSON.stringify(requestBody)
+                    });
+
+                } catch (error) {
+                    // Continue even if users.json update fails
+                }
+            }
+
+            async getCurrentFileSHA(username) {
+                try {
+                    const url = `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/data/users/${username}.json`;
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: this.getHeaders()
+                    });
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        return {
+                            sha: fileData.sha,
+                            content: JSON.parse(atob(fileData.content))
+                        };
+                    } else {
+                        return { sha: null, content: null };
+                    }
+                } catch (error) {
+                    return { sha: null, content: null };
+                }
+            }
+
+            async getCurrentUsersFileSHA() {
+                try {
+                    const url = `${this.baseUrl}/repos/${this.owner}/${this.repo}/contents/users.json`;
+                    
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: this.getHeaders()
+                    });
+
+                    if (response.ok) {
+                        const fileData = await response.json();
+                        return {
+                            sha: fileData.sha,
+                            content: JSON.parse(atob(fileData.content))
+                        };
+                    } else {
+                        return { sha: null, content: {} };
+                    }
+                } catch (error) {
+                    return { sha: null, content: {} };
+                }
+            }
+
+            createNewUserProfile(username) {
+                const userProfiles = {
+                    'admin': { name: 'Administrateur', email: 'admin@metatopo.com', role: 'admin' },
+                    'metatopo': { name: 'Utilisateur METATOPO', email: 'bouhabba.igt@gmail.com', role: 'admin' },
+                    'khalid': { name: 'Khalid Bouhabba', email: 'khalid@metatopo.com', role: 'topographe' },
+                    'abderrahman': { name: 'Abderrahman El Alami', email: 'abderrahman@metatopo.com', role: 'topographe' },
+                    'rachid': { name: 'Rachid Bennani', email: 'rachid@metatopo.com', role: 'topographe' },
+                    'youssef': { name: 'Youssef Tazi', email: 'youssef@metatopo.com', role: 'topographe' }
+                };
+
+                const profile = userProfiles[username] || {
+                    name: username,
+                    email: `${username}@metatopo.com`,
+                    role: 'topographe'
+                };
+
+                return {
+                    user_info: {
+                        username: username,
+                        name: profile.name,
+                        email: profile.email,
+                        role: profile.role,
+                        created_at: new Date().toISOString(),
+                        last_login: new Date().toISOString()
+                    },
+                    points: [],
+                    statistics: {
+                        total_points: 0,
+                        points_by_zone: {
+                            'Zone 1': 0,
+                            'Zone 2': 0,
+                            'Zone 3': 0,
+                            'Zone 4': 0
+                        },
+                        last_activity: null
+                    }
+                };
+            }
+
+            calculateStatistics(points) {
+                const stats = {
+                    total_points: points.length,
+                    points_by_zone: {
+                        'Zone 1': 0,
+                        'Zone 2': 0,
+                        'Zone 3': 0,
+                        'Zone 4': 0
+                    },
+                    last_activity: null
+                };
+
+                if (points.length > 0) {
+                    points.forEach(point => {
+                        if (stats.points_by_zone.hasOwnProperty(point.zone)) {
+                            stats.points_by_zone[point.zone]++;
+                        }
+                    });
+
+                    const sortedPoints = points.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                    stats.last_activity = sortedPoints[0].created_at;
+                }
+
+                return stats;
+            }
+
+            exportToJSON(userData, filename) {
+                const dataStr = JSON.stringify(userData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }
+        }
+
+        let dataService = null;
+        let currentUser = null;
+        let map = null;
+        let markersLayer = null;
+        let surveyPoints = [];
+        let searchMarker = null;
+        let userLocationMarker = null;
+        let csvData = null;
+
+        function initializeDataService() {
+            try {
+                dataService = new DataService();
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        async function loadUsersFile() {
+            if (!window.API_TOKEN || !window.REPO_OWNER || !window.REPO_NAME) {
+                throw new Error('Configuration manquante');
+            }
+
+            try {
+                const url = `https://api.github.com/repos/${window.REPO_OWNER}/${window.REPO_NAME}/contents/users.json`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `token ${window.API_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.status === 404) {
+                    throw new Error('Fichier users.json non trouvé dans le repository');
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Erreur API: ${response.status}`);
+                }
+
+                const fileData = await response.json();
+                const usersData = JSON.parse(atob(fileData.content));
+                
+                // Return users in the expected format
+                if (usersData.users) {
+                    return usersData.users;
+                } else {
+                    return usersData;
+                }
+
+            } catch (error) {
+                throw new Error(`Impossible de charger les utilisateurs: ${error.message}`);
+            }
+        }
+
+        async function saveUserPoints() {
+            if (!currentUser || !dataService) {
+                return;
+            }
+            
+            try {
+                const userData = await dataService.loadUserData(currentUser.username);
+                const userPoints = surveyPoints.filter(point => point.addedByUser === currentUser.username);
+                userData.points = userPoints;
+                await dataService.saveUserData(currentUser.username, userData);
+                showNotification('Points sauvegardés', 'success');
+            } catch (error) {
+                showNotification(`Erreur: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        async function loadUserPoints() {
+            if (!currentUser || !dataService) {
+                return [];
+            }
+            
+            try {
+                const userData = await dataService.loadUserData(currentUser.username);
+                return userData.points || [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function exportUserDataJSON() {
+            if (!currentUser) {
+                alert('Aucun utilisateur connecté.');
+                return;
+            }
+
+            const userData = {
+                user_info: {
+                    username: currentUser.username,
+                    name: currentUser.name,
+                    exported_at: new Date().toISOString()
+                },
+                points: surveyPoints.filter(point => point.addedByUser === currentUser.username),
+                statistics: dataService.calculateStatistics(surveyPoints.filter(point => point.addedByUser === currentUser.username))
+            };
+
+            const filename = `metatopo_${currentUser.username}_${new Date().toISOString().split('T')[0]}.json`;
+            dataService.exportToJSON(userData, filename);
+            
+            showNotification('Données exportées en JSON !', 'success');
+        }
+
+        async function importUserDataJSON(file) {
+            try {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        if (importedData.points && Array.isArray(importedData.points)) {
+                            let importedCount = 0;
+                            
+                            importedData.points.forEach(point => {
+                                point.addedByUser = currentUser.username;
+                                point.addedBy = currentUser.name;
+                                point.dateAdded = new Date().toLocaleDateString('fr-FR');
+                                point.id = 'imported_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                                
+                                surveyPoints.push(point);
+                                addPointToMap(point);
+                                importedCount++;
+                            });
+                            
+                            await saveUserPoints();
+                            showNotification(`${importedCount} points importés depuis JSON !`, 'success');
+                        } else {
+                            showNotification('Format JSON invalide', 'error');
+                        }
+                    } catch (error) {
+                        showNotification('Erreur import JSON: ' + error.message, 'error');
+                    }
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                showNotification('Erreur lecture fichier JSON', 'error');
+            }
+        }
+
+        function getCurrentLocation() {
+            const button = document.getElementById('locationBtn');
+            
+            if (!navigator.geolocation) {
+                alert('Géolocalisation non supportée.');
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Localisation...';
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    if (userLocationMarker) {
+                        map.removeLayer(userLocationMarker);
+                    }
+
+                    userLocationMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'user-location-marker',
+                            html: '<div style="background: #007bff; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,123,255,0.5); border: 3px solid white;"><i class="fas fa-user"></i></div>',
+                            iconSize: [20, 20]
+                        })
+                    }).addTo(map);
+
+                    map.setView([lat, lng], 16);
+
+                    const zoneInfo = determineZone(lat);
+                    let popupContent = '<div class="popup-header">Ma Position</div>';
+                    
+                    if (zoneInfo.zone) {
+                        zoneInfo.zones.forEach(zone => {
+                            const coords = proj4(projections.WGS84, projections[zone], [lng, lat]);
+                            popupContent += `
+                                <div class="popup-info">
+                                    <span class="popup-label">${zone}:</span><br>
+                                    <span class="popup-value">X: ${coords[0].toFixed(2)}</span><br>
+                                    <span class="popup-value">Y: ${coords[1].toFixed(2)}</span>
+                                </div>
+                            `;
+                        });
+                        
+                        popupContent += `
+                            <div class="popup-actions">
+                                <button class="popup-btn" onclick="addPointAtLocation(${lat}, ${lng}, '${zoneInfo.zones[0]}')">
+                                    <i class="fas fa-plus"></i> Ajouter Point Ici
+                                </button>
+                            </div>
+                        `;
+                    } else {
+                        popupContent += '<p>Position hors zones de projection.</p>';
+                    }
+
+                    userLocationMarker.bindPopup(popupContent).openPopup();
+                    
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-crosshairs"></i> Me Localiser';
+                    
+                    showNotification('Position trouvée !', 'success');
+                },
+                function(error) {
+                    let errorMessage = 'Erreur géolocalisation.';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Permission refusée.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Position non disponible.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Délai dépassé.';
+                            break;
+                    }
+                    
+                    alert(errorMessage);
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-crosshairs"></i> Me Localiser';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        const projections = {
+            WGS84: '+title=WGS 84 (long/lat) +proj=longlat +ellps=WGS84 +datum=WGS84 +units=degrees',
+            'Zone 1': "+proj=lcc +lat_1=33.3 +lat_0=33.3 +lon_0=-5.4 +k_0=0.999625769 +x_0=500000 +y_0=300000 +a=6378249.2 +b=6356515 +towgs84=31,146,47,0,0,0,0 +units=m +no_defs +no_off",
+            'Zone 2': "+proj=lcc +lat_1=29.7 +lat_0=29.7 +lon_0=-5.4 +k_0=0.9996155960000001 +x_0=500000 +y_0=300000 +a=6378249.2 +b=6356515 +towgs84=31,146,47,0,0,0,0 +units=m +no_defs +no_off",
+            'Zone 3': "+proj=lcc +lat_1=26.1 +lat_0=26.1 +lon_0=-5.4 +k_0=0.999616304 +x_0=1200000 +y_0=400000 +a=6378249.2 +b=6356515 +towgs84=31,146,47,0,0,0,0 +units=m +no_defs +no_off",
+            'Zone 4': "+proj=lcc +lat_1=22.5 +lat_0=22.5 +lon_0=-5.4 +k_0=0.999616437 +x_0=1500000 +y_0=400000 +a=6378249.2 +b=6356515 +towgs84=31,146,47,0,0,0,0 +units=m +no_defs +no_off"
+        };
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Check environment variables first
+            if (!window.API_TOKEN) {
+                document.getElementById('loginError').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Configuration manquante: API_TOKEN requis.';
+                document.getElementById('loginError').style.display = 'block';
+                return;
+            }
+
+            if (!initializeDataService()) {
+                document.getElementById('loginError').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Service de données non disponible.';
+                document.getElementById('loginError').style.display = 'block';
+                return;
+            }
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                showLoading();
+                const users = await loadUsersFile();
+                
+                if (users[username] && users[username].password === password) {
+                    currentUser = {
+                        username: username,
+                        name: users[username].name,
+                        role: users[username].role
+                    };
+                    
+                    setTimeout(() => {
+                        hideLoading();
+                        document.getElementById('loginSection').style.display = 'none';
+                        document.getElementById('appContainer').style.display = 'block';
+                        document.getElementById('currentUser').innerHTML = currentUser.name;
+                        initializeMap();
+                    }, 1000);
+                } else {
+                    hideLoading();
+                    document.getElementById('loginError').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Identifiants incorrects.';
+                    document.getElementById('loginError').style.display = 'block';
+                    setTimeout(() => {
+                        document.getElementById('loginError').style.display = 'none';
+                    }, 3000);
+                }
+            } catch (error) {
+                hideLoading();
+                document.getElementById('loginError').innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${error.message}`;
+                document.getElementById('loginError').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('loginError').style.display = 'none';
+                }, 5000);
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function logout() {
+            currentUser = null;
+            surveyPoints = [];
+            document.getElementById('loginSection').style.display = 'flex';
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function initializeMap() {
+            map = L.map('map').setView([32.880807, -6.913346], 6);
+
+            const googleMaps = L.tileLayer('http://{s}.google.com/vt/lyrs=s,h&hl=fr&gl=MA&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '© Google Maps'
+            });
+
+            const satellite = L.tileLayer('http://{s}.google.com/vt/lyrs=s&hl=fr&gl=MA&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '© Google Maps'
+            });
+
+            const streets = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            });
+
+            googleMaps.addTo(map);
+
+            const baseLayers = {
+                "Google Maps": googleMaps,
+                "Satellite": satellite,
+                "Rues": streets
+            };
+
+            L.control.layers(baseLayers).addTo(map);
+
+            markersLayer = L.markerClusterGroup({
+                chunkedLoading: true,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                iconCreateFunction: function(cluster) {
+                    return L.divIcon({
+                        html: '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(0,0,0,0.3);">' + cluster.getChildCount() + '</div>',
+                        className: 'custom-cluster-icon',
+                        iconSize: new L.Point(40, 40)
+                    });
+                }
+            });
+
+            map.addLayer(markersLayer);
+            map.on('click', onMapClick);
+
+            async function loadAndDisplayUserPoints() {
+                if (!currentUser || !dataService) return;
+                
+                try {
+                    const userData = await dataService.loadUserData(currentUser.username);
+                    
+                    if (userData.points && userData.points.length > 0) {
+                        userData.points.forEach(point => {
+                            surveyPoints.push(point);
+                            addPointToMap(point);
+                        });
+                        
+                        showNotification(`${userData.points.length} points chargés`, 'success');
+                    }
+                } catch (error) {
+                    showNotification(`Erreur chargement: ${error.message}`, 'error');
+                }
+            }
+
+            function handleJSONFile(file) {
+                if (!file) return;
+                
+                if (!file.name.toLowerCase().endsWith('.json')) {
+                    alert('Sélectionner un fichier JSON.');
+                    return;
+                }
+                
+                importUserDataJSON(file);
+            }
+
+            loadAndDisplayUserPoints();
+        }
+
+        function onMapClick(e) {
+            const coordinateMode = document.getElementById('coordinateMode').checked;
+            if (!coordinateMode) return;
+
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            
+            const zoneInfo = determineZone(lat);
+            if (!zoneInfo.zone) {
+                L.popup()
+                    .setLatLng(e.latlng)
+                    .setContent('<div class="popup-header">Hors Couverture</div><p>Localisation hors zones de projection.</p>')
+                    .openOn(map);
+                return;
+            }
+
+            let popupContent = '<div class="popup-header">Coordonnées</div>';
+            
+            zoneInfo.zones.forEach(zone => {
+                const coords = proj4(projections.WGS84, projections[zone], [lng, lat]);
+                popupContent += `
+                    <div class="popup-info">
+                        <span class="popup-label">${zone}:</span><br>
+                        <span class="popup-value">X: ${coords[0].toFixed(2)}</span><br>
+                        <span class="popup-value">Y: ${coords[1].toFixed(2)}</span>
+                    </div>
+                `;
+            });
+
+            popupContent += `
+                <div class="popup-actions">
+                    <button class="popup-btn" onclick="addPointAtLocation(${lat}, ${lng}, '${zoneInfo.zones[0]}')">
+                        <i class="fas fa-plus"></i> Ajouter Point
+                    </button>
+                    <a href="https://maps.google.com/maps?q=${lat},${lng}&hl=fr&gl=MA" target="_blank" class="popup-btn google-maps">
+                        <i class="fas fa-external-link-alt"></i> Google Maps
+                    </a>
+                </div>
+            `;
+
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(popupContent)
+                .openOn(map);
+        }
+
+        function determineZone(lat) {
+            if (lat > 31.5) {
+                return { zone: 'Zone 1', zones: ['Zone 1'] };
+            } else if (lat <= 31.5 && lat >= 27.9) {
+                if (lat > 31.0) {
+                    return { zone: 'Zone 1', zones: ['Zone 1', 'Zone 2'] };
+                } else {
+                    return { zone: 'Zone 2', zones: ['Zone 2'] };
+                }
+            } else if (lat < 27.9 && lat >= 24.3) {
+                if (lat > 27.5) {
+                    return { zone: 'Zone 2', zones: ['Zone 2', 'Zone 3'] };
+                } else {
+                    return { zone: 'Zone 3', zones: ['Zone 3'] };
+                }
+            } else if (lat < 24.3 && lat >= 20.0) {
+                if (lat > 24.0) {
+                    return { zone: 'Zone 3', zones: ['Zone 3', 'Zone 4'] };
+                } else {
+                    return { zone: 'Zone 4', zones: ['Zone 4'] };
+                }
+            } else {
+                return { zone: null, zones: [] };
+            }
+        }
+
+        function addPointAtLocation(lat, lng, zone) {
+            const coords = proj4(projections.WGS84, projections[zone], [lng, lat]);
+            
+            document.getElementById('pointZone').value = zone;
+            document.getElementById('pointX').value = coords[0].toFixed(2);
+            document.getElementById('pointY').value = coords[1].toFixed(2);
+            
+            showAddPointModal();
+        }
+
+        function searchByCoordinates() {
+            const zone = document.getElementById('searchZone').value;
+            const x = parseFloat(document.getElementById('searchX').value);
+            const y = parseFloat(document.getElementById('searchY').value);
+
+            if (!zone || isNaN(x) || isNaN(y)) {
+                alert('Remplir tous les champs avec des coordonnées valides.');
+                return;
+            }
+
+            try {
+                const wgs84Coords = proj4(projections[zone], projections.WGS84, [x, y]);
+                const lat = wgs84Coords[1];
+                const lng = wgs84Coords[0];
+
+                if (searchMarker) {
+                    map.removeLayer(searchMarker);
+                }
+
+                searchMarker = L.marker([lat, lng], {
+                    icon: L.divIcon({
+                        className: 'search-marker',
+                        html: '<div style="background: #ff4444; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 10px rgba(255,68,68,0.5); border: 3px solid white;"><i class="fas fa-search"></i></div>',
+                        iconSize: [30, 30]
+                    })
+                }).addTo(map);
+
+                map.setView([lat, lng], 16);
+
+                const popupContent = `
+                    <div class="popup-header">Résultat Recherche</div>
+                    <div class="popup-info">
+                        <span class="popup-label">${zone}:</span><br>
+                        <span class="popup-value">X: ${x}</span><br>
+                        <span class="popup-value">Y: ${y}</span>
+                    </div>
+                    <div class="popup-actions">
+                        <button class="popup-btn" onclick="addPointAtLocation(${lat}, ${lng}, '${zone}')">
+                            <i class="fas fa-plus"></i> Ajouter Point
+                        </button>
+                        <a href="https://maps.google.com/maps?q=${lat},${lng}&hl=fr&gl=MA" target="_blank" class="popup-btn google-maps">
+                            <i class="fas fa-external-link-alt"></i> Google Maps
+                        </a>
+                    </div>
+                `;
+
+                searchMarker.bindPopup(popupContent).openPopup();
+
+            } catch (error) {
+                alert('Erreur conversion coordonnées.');
+            }
+        }
+
+        function showAddPointModal() {
+            document.getElementById('addPointModal').style.display = 'block';
+        }
+
+        function closeAddPointModal() {
+            document.getElementById('addPointModal').style.display = 'none';
+            document.getElementById('addPointForm').reset();
+        }
+
+        function showImportModal() {
+            document.getElementById('importModal').style.display = 'block';
+        }
+
+        function closeImportModal() {
+            document.getElementById('importModal').style.display = 'none';
+            csvData = null;
+            document.getElementById('fileInfo').style.display = 'none';
+            document.getElementById('columnMapping').style.display = 'none';
+            document.getElementById('importActions').style.display = 'none';
+        }
+
+        document.getElementById('addPointForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const pointData = {
+                id: 'point_' + Date.now(),
+                name: document.getElementById('pointName').value,
+                zone: document.getElementById('pointZone').value,
+                x: parseFloat(document.getElementById('pointX').value),
+                y: parseFloat(document.getElementById('pointY').value),
+                z: document.getElementById('pointZ').value ? parseFloat(document.getElementById('pointZ').value) : null,
+                description: document.getElementById('pointDescription').value,
+                reference: document.getElementById('pointReference').value,
+                project: document.getElementById('pointProject').value,
+                addedBy: currentUser.name,
+                dateAdded: new Date().toLocaleDateString('fr-FR'),
+                addedByUser: currentUser.username
+            };
+
+            surveyPoints.push(pointData);
+            addPointToMap(pointData);
+            saveUserPoints();
+            closeAddPointModal();
+            showNotification('Point ajouté !', 'success');
+        });
+
+        function addPointToMap(pointData) {
+            try {
+                const wgs84Coords = proj4(projections[pointData.zone], projections.WGS84, [pointData.x, pointData.y]);
+                const lat = wgs84Coords[1];
+                const lng = wgs84Coords[0];
+
+                const icon = L.divIcon({
+                    className: 'custom-point-marker',
+                    html: `<div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 8px rgba(40,167,69,0.4); border: 2px solid white; font-size: 12px;"><i class="fas fa-map-pin"></i></div>`,
+                    iconSize: [25, 25],
+                    iconAnchor: [12.5, 25]
+                });
+
+                const marker = L.marker([lat, lng], { icon: icon });
+
+                let popupContent = `
+                    <div class="popup-header">${pointData.name}</div>
+                    <div class="popup-info">
+                        <span class="popup-label">Zone:</span> <span class="popup-value">${pointData.zone}</span>
+                    </div>
+                    <div class="popup-info">
+                        <span class="popup-label">Coordonnées:</span><br>
+                        <span class="popup-value">X: ${pointData.x}</span><br>
+                        <span class="popup-value">Y: ${pointData.y}</span>
+                `;
+
+                if (pointData.z !== null) {
+                    popupContent += `<br><span class="popup-value">Z: ${pointData.z}</span>`;
+                }
+
+                popupContent += `</div>`;
+
+                if (pointData.description) {
+                    popupContent += `
+                        <div class="popup-info">
+                            <span class="popup-label">Description:</span> <span class="popup-value">${pointData.description}</span>
+                        </div>
+                    `;
+                }
+
+                if (pointData.reference) {
+                    popupContent += `
+                        <div class="popup-info">
+                            <span class="popup-label">Référence:</span> <span class="popup-value">${pointData.reference}</span>
+                        </div>
+                    `;
+                }
+
+                if (pointData.project) {
+                    popupContent += `
+                        <div class="popup-info">
+                            <span class="popup-label">Projet:</span> <span class="popup-value">${pointData.project}</span>
+                        </div>
+                    `;
+                }
+
+                popupContent += `
+                    <div class="popup-info">
+                        <span class="popup-label">Ajouté par:</span> <span class="popup-value">${pointData.addedBy}</span>
+                    </div>
+                    <div class="popup-info">
+                        <span class="popup-label">Date:</span> <span class="popup-value">${pointData.dateAdded}</span>
+                    </div>
+                    <div class="popup-actions">
+                        <a href="https://maps.google.com/maps?q=${lat},${lng}&hl=fr&gl=MA" target="_blank" class="popup-btn google-maps">
+                            <i class="fas fa-external-link-alt"></i> Google Maps
+                        </a>
+                `;
+
+                if (currentUser.role === 'admin' || currentUser.username === pointData.addedByUser) {
+                    popupContent += `
+                        <button class="popup-btn delete" onclick="deletePoint('${pointData.id}')">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    `;
+                }
+
+                popupContent += `</div>`;
+
+                marker.bindPopup(popupContent);
+                marker.pointData = pointData;
+                markersLayer.addLayer(marker);
+
+            } catch (error) {
+                showNotification('Erreur ajout point carte', 'error');
+            }
+        }
+
+        function deletePoint(pointId) {
+            if (confirm('Supprimer ce point ?')) {
+                surveyPoints = surveyPoints.filter(point => point.id !== pointId);
+                
+                markersLayer.eachLayer(function(layer) {
+                    if (layer.pointData && layer.pointData.id === pointId) {
+                        markersLayer.removeLayer(layer);
+                    }
+                });
+                
+                saveUserPoints();
+                showNotification('Point supprimé !', 'success');
+            }
+        }
+
+        function exportData() {
+            if (surveyPoints.length === 0) {
+                alert('Aucun point à exporter.');
+                return;
+            }
+
+            let csv = 'Nom,Zone,X,Y,Z,Description,Reference,Projet,Ajoute_Par,Date_Ajout\n';
+            
+            surveyPoints.forEach(point => {
+                csv += `"${point.name}","${point.zone}",${point.x},${point.y},${point.z || ''},` +
+                       `"${point.description || ''}","${point.reference || ''}","${point.project || ''}",` +
+                       `"${point.addedBy}","${point.dateAdded}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `points_topographiques_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showNotification('Données exportées !', 'success');
+        }
+
+        function downloadSampleCSV() {
+            const sampleCSV = `Nom,X,Y,Zone,Z,Description,Reference,Projet
+Point_Exemple_1,483250.45,364125.78,Zone 1,12.5,"Point de contrôle","REF-001","Projet Test"
+Point_Exemple_2,498750.22,385450.66,,85.3,"Monument géodésique","REF-002","Réseau Géodésique"
+Point_Exemple_3,512340.88,342150.45,Zone 2,468.2,"Référence aéroport","REF-003","Développement Aéroport"
+Point_Sans_Zone,520000.50,350000.75,,,,"Point sans zone",,"Test Auto-détection"`;
+
+            const blob = new Blob([sampleCSV], { type: 'text/csv;charset=utf-8;' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'modele_points_topographiques.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showNotification('Modèle CSV téléchargé !', 'success');
+        }
+
+        const fileDropZone = document.getElementById('fileDropZone');
+        const csvFileInput = document.getElementById('csvFileInput');
+
+        fileDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            fileDropZone.classList.add('dragover');
+        });
+
+        fileDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+        });
+
+        fileDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            fileDropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleCSVFile(files[0]);
+            }
+        });
+
+        csvFileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleCSVFile(e.target.files[0]);
+            }
+        });
+
+        function handleCSVFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                alert('Sélectionner un fichier CSV.');
+                return;
+            }
+
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = `Taille: ${(file.size / 1024).toFixed(2)} KB`;
+            document.getElementById('fileInfo').style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                parseCSV(csvText);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(csvText) {
+            const firstLine = csvText.split('\n')[0];
+            const commaCount = (firstLine.match(/,/g) || []).length;
+            const semicolonCount = (firstLine.match(/;/g) || []).length;
+            
+            const separator = semicolonCount > commaCount ? ';' : ',';
+            
+            const lines = csvText.split('\n').filter(line => line.trim());
+            const hasHeaders = document.getElementById('hasHeaders').checked;
+            
+            let headers = [];
+            let dataStart = 0;
+
+            if (hasHeaders && lines.length > 0) {
+                headers = parseCSVLine(lines[0], separator);
+                dataStart = 1;
+            } else {
+                const firstLineData = parseCSVLine(lines[0], separator);
+                headers = firstLineData.map((_, index) => `Colonne_${index + 1}`);
+            }
+
+            populateColumnMappingOptions(headers);
+            
+            csvData = {
+                headers: headers,
+                separator: separator,
+                data: lines.slice(dataStart).map(line => {
+                    const values = parseCSVLine(line, separator);
+                    const row = {};
+                    headers.forEach((header, index) => {
+                        row[header] = values[index] || '';
+                    });
+                    return row;
+                })
+            };
+
+            document.getElementById('columnMapping').style.display = 'block';
+            document.getElementById('importActions').style.display = 'block';
+            
+            showNotification(`CSV analysé: ${headers.length} colonnes, ${csvData.data.length} lignes`, 'info');
+        }
+
+        function parseCSVLine(line, separator) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                const nextChar = line[i + 1];
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === separator && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            
+            result.push(current.trim());
+            return result;
+        }
+
+        function populateColumnMappingOptions(headers) {
+            const selects = ['nameColumn', 'zoneColumn', 'xColumn', 'yColumn', 'zColumn', 'descColumn', 'refColumn', 'projectColumn'];
+            
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const isRequired = ['nameColumn', 'xColumn', 'yColumn'].includes(selectId);
+                
+                if (selectId === 'zoneColumn') {
+                    select.innerHTML = '<option value="">Sélectionner (auto-détection si vide)</option>';
+                } else {
+                    select.innerHTML = '<option value="">Sélectionner' + (isRequired ? '' : ' (optionnel)') + '</option>';
+                }
+                
+                headers.forEach((header, index) => {
+                    const option = document.createElement('option');
+                    option.value = index;
+                    option.textContent = header;
+                    select.appendChild(option);
+                });
+            });
+
+            autoMapColumns(headers);
+        }
+
+        function autoMapColumns(headers) {
+            const mapping = {
+                'nameColumn': ['nom', 'name', 'point', 'designation', 'libelle'],
+                'zoneColumn': ['zone', 'projection', 'proj', 'zone_projection'],
+                'xColumn': ['x', 'easting', 'est', 'coord_x', 'longitude'],
+                'yColumn': ['y', 'northing', 'nord', 'coord_y', 'latitude'],
+                'zColumn': ['z', 'altitude', 'elev', 'height', 'alt', 'coord_z'],
+                'descColumn': ['description', 'desc', 'remarque', 'commentaire', 'note'],
+                'refColumn': ['reference', 'ref', 'numero', 'num', 'code'],
+                'projectColumn': ['projet', 'project', 'lotissement', 'chantier', 'provenance']
+            };
+
+            Object.keys(mapping).forEach(selectId => {
+                const select = document.getElementById(selectId);
+                const keywords = mapping[selectId];
+                
+                headers.forEach((header, index) => {
+                    const headerLower = header.toLowerCase().trim();
+                    if (keywords.some(keyword => headerLower.includes(keyword) || keyword.includes(headerLower))) {
+                        if (select.value === '') {
+                            select.value = index;
+                        }
+                    }
+                });
+            });
+        }
+
+        function importCSVData() {
+            if (!csvData) {
+                alert('Aucun fichier CSV chargé.');
+                return;
+            }
+
+            const nameCol = document.getElementById('nameColumn').value;
+            const zoneCol = document.getElementById('zoneColumn').value;
+            const xCol = document.getElementById('xColumn').value;
+            const yCol = document.getElementById('yColumn').value;
+            const zCol = document.getElementById('zColumn').value;
+            const descCol = document.getElementById('descColumn').value;
+            const refCol = document.getElementById('refColumn').value;
+            const projectCol = document.getElementById('projectColumn').value;
+
+            if (!nameCol || !xCol || !yCol) {
+                alert('Sélectionner au moins Nom, X et Y.');
+                return;
+            }
+
+            let importedCount = 0;
+            let errorCount = 0;
+
+            csvData.data.forEach((row, index) => {
+                try {
+                    const name = row[csvData.headers[nameCol]]?.toString().trim();
+                    const xValue = row[csvData.headers[xCol]]?.toString().trim();
+                    const yValue = row[csvData.headers[yCol]]?.toString().trim();
+                    let zone = zoneCol ? row[csvData.headers[zoneCol]]?.toString().trim() : '';
+
+                    if (!name || !xValue || !yValue) {
+                        errorCount++;
+                        return;
+                    }
+
+                    const x = parseFloat(xValue);
+                    const y = parseFloat(yValue);
+
+                    if (isNaN(x) || isNaN(y)) {
+                        errorCount++;
+                        return;
+                    }
+
+                    if (!zone || !['Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'].includes(zone)) {
+                        zone = determineZoneFromCoordinates(x, y);
+                        
+                        if (!zone) {
+                            errorCount++;
+                            return;
+                        }
+                    }
+
+                    const pointData = {
+                        id: 'point_' + Date.now() + '_' + index,
+                        name: name,
+                        zone: zone,
+                        x: x,
+                        y: y,
+                        z: zCol && row[csvData.headers[zCol]] ? parseFloat(row[csvData.headers[zCol]]) || null : null,
+                        description: descCol && row[csvData.headers[descCol]] ? row[csvData.headers[descCol]].toString().trim() : '',
+                        reference: refCol && row[csvData.headers[refCol]] ? row[csvData.headers[refCol]].toString().trim() : '',
+                        project: projectCol && row[csvData.headers[projectCol]] ? row[csvData.headers[projectCol]].toString().trim() : '',
+                        addedBy: currentUser.name,
+                        dateAdded: new Date().toLocaleDateString('fr-FR'),
+                        addedByUser: currentUser.username
+                    };
+
+                    surveyPoints.push(pointData);
+                    addPointToMap(pointData);
+                    importedCount++;
+
+                } catch (error) {
+                    errorCount++;
+                }
+            });
+
+            closeImportModal();
+            saveUserPoints();
+            
+            if (importedCount > 0) {
+                showNotification(`${importedCount} points importés !` + (errorCount > 0 ? ` (${errorCount} erreurs)` : ''), 'success');
+            } else {
+                showNotification('Aucun point importé.', 'error');
+            }
+        }
+
+        function determineZoneFromCoordinates(x, y) {
+            if (x >= 400000 && x <= 600000) {
+                if (y >= 350000 && y <= 500000) {
+                    return 'Zone 1';
+                } else if (y >= 250000 && y <= 400000) {
+                    return 'Zone 2';
+                }
+            } else if (x >= 1100000 && x <= 1300000 && y >= 300000 && y <= 500000) {
+                return 'Zone 3';
+            } else if (x >= 1400000 && x <= 1600000 && y >= 300000 && y <= 500000) {
+                return 'Zone 4';
+            }
+            
+            if (x < 800000) {
+                return y > 325000 ? 'Zone 1' : 'Zone 2';
+            } else if (x < 1350000) {
+                return 'Zone 3';
+            } else {
+                return 'Zone 4';
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 70px;
+                right: 20px;
+                padding: 0.8rem 1.2rem;
+                border-radius: 6px;
+                color: white;
+                font-weight: 500;
+                z-index: 10002;
+                min-width: 200px;
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                font-size: 0.85rem;
+            `;
+
+            if (type === 'success') {
+                notification.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+            } else if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            } else {
+                notification.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+            }
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 3000);
+        }
+
+        window.addEventListener('click', function(event) {
+            const addModal = document.getElementById('addPointModal');
+            const importModal = document.getElementById('importModal');
+            
+            if (event.target === addModal) {
+                closeAddPointModal();
+            }
+            if (event.target === importModal) {
+                closeImportModal();
+            }
+        });
+
+        document.getElementById('hasHeaders').addEventListener('change', function() {
+            const fileInput = document.getElementById('csvFileInput');
+            if (fileInput.files.length > 0) {
+                handleCSVFile(fileInput.files[0]);
+            }
+        });
+
+        setInterval(async () => {
+            if (currentUser && dataService && surveyPoints.length > 0) {
+                try {
+                    await saveUserPoints();
+                } catch (error) {
+                    // Silent fail for auto-save
+                }
+            }
+        }, 300000);
+    </script>
+</body>
+</html>
